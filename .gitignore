@@ -1,0 +1,9 @@
+target
+dist
+node_modules
+traildepot
+vendor
+.codegraph
+thoughts
+
+!traildepot/migrations
