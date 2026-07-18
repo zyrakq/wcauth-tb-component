@@ -6,7 +6,7 @@ use trailbase_wasm::http::{
     Html, HttpError, HttpRoute, IntoBody, IntoResponse, Json, Method, Request, Response,
     StatusCode, header, routing,
 };
-use trailbase_wasm::{Guest, UiManifest, export};
+use trailbase_wasm::{Guest, AdminModule, export};
 
 mod config;
 mod db_kv;
@@ -34,8 +34,8 @@ pub(crate) struct Assets;
 struct Endpoints;
 
 impl Guest for Endpoints {
-    fn ui_manifest() -> Option<UiManifest> {
-        Some(UiManifest {
+    fn admin_module() -> Option<AdminModule> {
+        Some(AdminModule {
             display_name: "WcAuth".to_string(),
             icon: Some(
                 "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" \
