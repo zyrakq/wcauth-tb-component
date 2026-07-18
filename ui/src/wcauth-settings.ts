@@ -1,4 +1,4 @@
-import { LitElement, html, css } from "lit";
+import { LitElement, html, css, type PropertyValues } from "lit";
 import { customElement, state, query } from "lit/decorators.js";
 import { msg } from "@lit/localize";
 import { localized } from "./i18n/localized.ts";
@@ -35,6 +35,13 @@ export class WcAuthSettings extends LitElement {
   @state() private error = "";
   @state() private successMessage = "";
 
+  // Mirrors trailbase admin's own dark-mode signal on <html> (class="dark" /
+  // data-kb-theme="dark") — this page is injected as shadow DOM directly
+  // into that same document, not an iframe, so document.documentElement here
+  // IS trailbase's <html>. See connectedCallback/observeThemeChanges below.
+  @state() private isDarkTheme = false;
+  private themeObserver?: MutationObserver;
+
   // General tab state
   @state() private resetPasswordUrl = "";
   @state() private savingGeneral = false;
@@ -56,6 +63,10 @@ export class WcAuthSettings extends LitElement {
 
   async connectedCallback() {
     super.connectedCallback();
+    // Read synchronously before first paint so there's no flash of the
+    // wrong palette when navigating in while trailbase is already dark.
+    this.isDarkTheme = this.detectDarkTheme();
+    this.observeThemeChanges();
     try {
       await this.loadConfig();
     } catch (err) {
@@ -66,6 +77,36 @@ export class WcAuthSettings extends LitElement {
     } finally {
       this.loading = false;
     }
+  }
+
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    this.themeObserver?.disconnect();
+    this.themeObserver = undefined;
+  }
+
+  updated(changedProperties: PropertyValues) {
+    super.updated(changedProperties);
+    if (changedProperties.has("isDarkTheme")) {
+      this.toggleAttribute("theme-dark", this.isDarkTheme);
+    }
+  }
+
+  private detectDarkTheme(): boolean {
+    const root = document.documentElement;
+    return root.classList.contains("dark") || root.dataset.kbTheme === "dark";
+  }
+
+  private observeThemeChanges() {
+    const root = document.documentElement;
+    if (!root) return;
+    this.themeObserver = new MutationObserver(() => {
+      this.isDarkTheme = this.detectDarkTheme();
+    });
+    this.themeObserver.observe(root, {
+      attributes: true,
+      attributeFilter: ["class", "data-kb-theme"],
+    });
   }
 
   private async loadConfig() {
@@ -788,6 +829,23 @@ export class WcAuthSettings extends LitElement {
           gap: 0.25rem;
           padding: 0.75rem;
         }
+      }
+
+      /* Values mirror app/ui/src/features/theme/styles/theme-variables.css
+       * (dark block) for brand consistency. This page follows trailbase's
+       * admin theme signal, not velora's own --html[theme] mechanism. */
+      :host([theme-dark]) {
+        --theme-color-primary: #10b981;
+        --theme-color-primary-hover: #059669;
+        --theme-color-primary-active: #047857;
+        --theme-color-background: #212529;
+        --theme-color-surface: #2c3136;
+        --theme-color-surface-elevated: #343a40;
+        --theme-color-text-primary: #dee2e6;
+        --theme-color-text-secondary: #adb5bd;
+        --theme-color-border: #495057;
+        --theme-color-success: #34d399;
+        --theme-color-error: #f87171;
       }
     `,
   ];
