@@ -6,7 +6,7 @@ use trailbase_wasm::http::{
     Html, HttpError, HttpRoute, IntoBody, IntoResponse, Json, Method, Request, Response,
     StatusCode, header, routing,
 };
-use trailbase_wasm::{Guest, OptionalManifest, export, export_optional};
+use trailbase_wasm::{Guest, UiManifest, export};
 
 mod config;
 mod db_kv;
@@ -31,19 +31,11 @@ use settings::settings_page;
 #[folder = "ui/dist/"]
 pub(crate) struct Assets;
 
-#[derive(serde::Serialize)]
-struct WasmManifest {
-    display_name: String,
-    icon: Option<String>,
-    config_path: Option<String>,
-    description: Option<String>,
-}
-
 struct Endpoints;
 
-impl OptionalManifest for Endpoints {
-    fn get_manifest() -> String {
-        serde_json::to_string(&WasmManifest {
+impl Guest for Endpoints {
+    fn ui_manifest() -> Option<UiManifest> {
+        Some(UiManifest {
             display_name: "WcAuth".to_string(),
             icon: Some(
                 "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" \
@@ -62,11 +54,8 @@ impl OptionalManifest for Endpoints {
                     .to_string(),
             ),
         })
-        .unwrap_or_default()
     }
-}
 
-impl Guest for Endpoints {
     fn http_handlers() -> Vec<HttpRoute> {
         return vec![
             // Settings page — HTML wrapper that loads the bundle and mounts
@@ -359,4 +348,3 @@ impl Guest for Endpoints {
 }
 
 export!(Endpoints);
-export_optional!(Endpoints);
